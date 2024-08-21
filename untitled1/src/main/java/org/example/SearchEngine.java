@@ -40,23 +40,22 @@ public class SearchEngine {
             } catch (InterruptedException e) {
                 executorService.shutdownNow();
             }
-
-            System.out.println("Size of wordIndex: " + wordIndex.size());
-
-            Map.Entry<String, Integer> mostFrequentKeyWithCount = getMostFrequentKeyWithCount();
-            if (mostFrequentKeyWithCount != null) {
-                System.out.println("Most frequent key: " + mostFrequentKeyWithCount.getKey() + " with count: " + mostFrequentKeyWithCount.getValue());
-            } else {
-                System.out.println("No keys found in the wordIndex.");
-            }
-
-            int totalValuesCount = getTotalValuesCount();
-            System.out.println("Total number of values in the map: " + totalValuesCount);
         });
+        System.out.println("Size of wordIndex: " + String.format("%,d", wordIndex.size()).replace(',', '_'));
 
+
+        Map.Entry<String, Integer> mostFrequentKeyWithCount = getMostFrequentKeyWithCount();
+        if (mostFrequentKeyWithCount != null) {
+            System.out.println("Most frequent key: " + mostFrequentKeyWithCount.getKey() + " with count: " + String.format("%,d", mostFrequentKeyWithCount.getValue()).replace(',', '_'));
+        } else {
+            System.out.println("No keys found in the wordIndex.");
+        }
+
+        int totalValuesCount = getTotalValuesCount();
+        System.out.println("Total number of values in the map: " + String.format("%,d", totalValuesCount).replace(',', '_'));
 
                 System.out.print("Enter search terms: ");
-                String searchTerms = "hemilaryngectomy Hemileia Hemileia hemilethargy hemiligulate hemilingual hemimellitene";
+                String searchTerms = "Zwolle Zworykin ZZ";
 
                 System.out.print("Enter mode (single, consecutive, anywhere): ");
                 String mode ="consecutive";
@@ -223,6 +222,6 @@ public class SearchEngine {
         task.run();
         long endTime = System.currentTimeMillis();
         long elapsedTime = endTime - startTime;
-        System.out.println("Execution time: " + elapsedTime + " milliseconds");
+        System.out.println("Map load time: " + String.format("%,d", elapsedTime).replace(',', '_') + " milliseconds");
     }
 }
