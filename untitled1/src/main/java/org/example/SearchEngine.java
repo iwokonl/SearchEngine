@@ -55,10 +55,10 @@ public class SearchEngine {
         System.out.println("Total number of values in the map: " + String.format("%,d", totalValuesCount).replace(',', '_'));
 
                 System.out.println("Enter search terms: ");
-                String searchTerms = "ZZ";
+                String searchTerms = "Do sklepu albo do piwnicy ";
 
                 System.out.println("Enter mode (single, consecutive, anywhere): ");
-                String mode ="single";
+                String mode ="consecutive";
 
 
 
@@ -136,14 +136,21 @@ public class SearchEngine {
                 });
                 break;
             case "consecutive":
-                Set<Path> uniqueFiles = ConcurrentHashMap.newKeySet();
-                Arrays.stream(searchWords).parallel().forEach(word -> {
+                Set<Path> paths = new HashSet<>();
+                for (String word : searchWords) {
                     List<Path> files = wordIndex.get(word.toLowerCase());
                     if (files != null) {
-                        uniqueFiles.addAll(files);
+                        if (paths.isEmpty()) {
+                            paths.addAll(files);
+                        } else {
+                            paths.retainAll(files);
+                        }
+                    } else {
+                        paths.clear();
+                        break;
                     }
-                });
-                uniqueFiles.parallelStream().forEach(file -> {
+                }
+                paths.parallelStream().forEach(file -> {
                     if (containsConsecutiveWords(file, searchWords)) {
                         resultFiles.add(file);
                     }
