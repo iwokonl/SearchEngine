@@ -52,11 +52,11 @@ public class SearchEngine {
 
             int totalValuesCount = getTotalValuesCount();
             System.out.println("Total number of values in the map: " + totalValuesCount);
-
+        });
 
 
                 System.out.print("Enter search terms: ");
-                String searchTerms = "hemilethargy hemiligulate";
+                String searchTerms = "hemilaryngectomy Hemileia Hemileia hemilethargy hemiligulate hemilingual hemimellitene";
 
                 System.out.print("Enter mode (single, consecutive, anywhere): ");
                 String mode ="consecutive";
@@ -66,7 +66,7 @@ public class SearchEngine {
                 String[] searchWords = searchTerms.split("\\s+");
                 searchIndex(searchWords, mode);
 
-        });
+
     }
 
     private static int getTotalValuesCount() {
