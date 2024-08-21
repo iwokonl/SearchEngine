@@ -17,7 +17,7 @@ public class SearchEngine {
 
 
 
-        String directory = "C:\\GitHub\\SearchEngine\\untitled1\\src\\main\\java\\org\\example\\test";
+        String directory = "src/main/java/org/example/test";
         measureExecutionTime(() -> {
             try {
                 Path startPath = Paths.get(directory);
@@ -54,11 +54,11 @@ public class SearchEngine {
         int totalValuesCount = getTotalValuesCount();
         System.out.println("Total number of values in the map: " + String.format("%,d", totalValuesCount).replace(',', '_'));
 
-                System.out.print("Enter search terms: ");
-                String searchTerms = "Zwolle Zworykin ZZ";
+                System.out.println("Enter search terms: ");
+                String searchTerms = "ZZ";
 
-                System.out.print("Enter mode (single, consecutive, anywhere): ");
-                String mode ="consecutive";
+                System.out.println("Enter mode (single, consecutive, anywhere): ");
+                String mode ="single";
 
 
 
@@ -124,8 +124,10 @@ public class SearchEngine {
 
     private static void searchIndex(String[] searchWords, String mode) {
         Set<Path> resultFiles = ConcurrentHashMap.newKeySet();
+        long startTime = System.currentTimeMillis();
         switch (mode) {
             case "single":
+
                 Arrays.stream(searchWords).parallel().forEach(word -> {
                     List<Path> files = wordIndex.get(word.toLowerCase());
                     if (files != null) {
@@ -148,6 +150,7 @@ public class SearchEngine {
                 });
                 break;
             case "anywhere":
+
                 Set<Path> commonFiles = new HashSet<>();
                 for (String word : searchWords) {
                     List<Path> files = wordIndex.get(word.toLowerCase());
@@ -163,14 +166,19 @@ public class SearchEngine {
                     }
                 }
                 resultFiles.addAll(commonFiles);
+
                 break;
             default:
                 System.out.println("Invalid mode. Use 'single', 'consecutive', or 'anywhere'.");
+                long endTime = System.currentTimeMillis();
+                System.out.println("Time taken to search single phrase : " + (endTime - startTime) + " milliseconds");
                 return;
         }
 
         if (!resultFiles.isEmpty()) {
             resultFiles.forEach(file -> System.out.println("Found in file: " + file.toString()));
+            long endTime = System.currentTimeMillis();
+            System.out.println("Time taken to search single phrase or anywhere : " + (endTime - startTime) + " milliseconds");
         } else {
             System.out.println("No files contain the terms: " + Arrays.toString(searchWords));
         }
