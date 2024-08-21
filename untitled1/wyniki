@@ -1,6 +1,6 @@
-Map load time: 510 milliseconds
+Map load time: 506 milliseconds
 Size of wordIndex: 434_053
 Most frequent key: w with count: 31_973
 Total number of values in the map: 1_582_150
-Enter search terms: Enter mode (single, consecutive, anywhere): Time taken to search file C:\GitHub\SearchEngine\untitled1\src\main\java\org\example\test\words.txt: 65 milliseconds
+Enter search terms: Enter mode (single, consecutive, anywhere): Time taken to search file C:\GitHub\SearchEngine\untitled1\src\main\java\org\example\test\words.txt: 50 milliseconds
 Found in file: C:\GitHub\SearchEngine\untitled1\src\main\java\org\example\test\words.txt

@@ -23,7 +23,7 @@ public class SearchEngine {
                 Path startPath = Paths.get(directory);
                 Files.walkFileTree(startPath, new SimpleFileVisitor<Path>() {
                     @Override
-                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                         indexFile(file);
                         return FileVisitResult.CONTINUE;
                     }
