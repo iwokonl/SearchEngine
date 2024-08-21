@@ -17,7 +17,7 @@ public class SearchEngine {
 
 
 
-        String directory = "D:\\syf\\untitled1\\src\\main\\java\\org\\example\\test";
+        String directory = "C:\\GitHub\\SearchEngine\\untitled1\\src\\main\\java\\org\\example\\test";
         measureExecutionTime(() -> {
             try {
                 Path startPath = Paths.get(directory);
@@ -56,10 +56,10 @@ public class SearchEngine {
 
 
                 System.out.print("Enter search terms: ");
-                String searchTerms = scanner.nextLine();
+                String searchTerms = "hemilethargy hemiligulate";
 
                 System.out.print("Enter mode (single, consecutive, anywhere): ");
-                String mode = scanner.nextLine();
+                String mode ="consecutive";
 
 
 
