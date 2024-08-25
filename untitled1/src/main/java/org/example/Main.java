@@ -93,10 +93,10 @@ public class Main {
         System.out.println("Total number of values in the map: " + String.format("%,d", totalValuesCount).replace(',', '_'));
 
         System.out.println("Enter search terms: ");
-        String searchTerms = "Stanisławie Piotrowiczu: dziewczyna jak malina";
+        String searchTerms = "także odpowiem";
 
         System.out.println("Enter mode (single, consecutive, anywhere): ");
-        String mode = "consecutive";
+        String mode = "single";
 
         String[] searchWords = searchTerms.split("[^\\p{L}+]");
         searchWords = Arrays.stream(searchWords)
@@ -338,12 +338,15 @@ public class Main {
                     .filter(s -> !s.isEmpty())
                     .toList()
                     .toArray(new String[0]);
-
-            int searchLength = searchWords.length;
+            String[] searchWordsFilteredArray = Arrays.stream(searchWords)
+                    .filter(s -> !s.isEmpty())
+                    .toList()
+                    .toArray(new String[0]);
+            int searchLength = searchWordsFilteredArray.length;
             for (int i = 0; i <= words.length - searchLength; i++) {
                 boolean consecutive = true;
                 for (int j = 0; j < searchLength; j++) {
-                    if (!words[i + j].equals(filteredArray[j].toLowerCase())) {
+                    if (!words[i + j].equals(searchWordsFilteredArray[j].toLowerCase())) {
                         consecutive = false;
                         break;
                     }

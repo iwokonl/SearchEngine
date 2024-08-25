@@ -75,7 +75,7 @@ public class SearchEngine {
         System.out.println("Total number of values in the map: " + String.format("%,d", totalValuesCount).replace(',', '_'));
 
         System.out.println("Enter search terms: ");
-        String searchTerms = "rubli położy";
+        String searchTerms = "także odpowiem";
 
         System.out.println("Enter mode (single, consecutive, anywhere): ");
         String mode = "consecutive";
@@ -227,11 +227,15 @@ public class SearchEngine {
                     .filter(s -> !s.isEmpty())
                     .toList()
                     .toArray(new String[0]);
-            int searchLength = filteredArray.length;
+            String[] searchWordsFilteredArray = Arrays.stream(searchWords)
+                    .filter(s -> !s.isEmpty())
+                    .toList()
+                    .toArray(new String[0]);
+            int searchLength = searchWordsFilteredArray.length;
             for (int i = 0; i <= words.length - searchLength; i++) {
                 boolean consecutive = true;
                 for (int j = 0; j < searchLength; j++) {
-                    if (!words[i + j].equals(filteredArray[j].toLowerCase())) {
+                    if (!filteredArray[i + j].equals(searchWordsFilteredArray[j].toLowerCase())) {
                         consecutive = false;
                         break;
                     }
