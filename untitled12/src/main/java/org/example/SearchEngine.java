@@ -74,16 +74,21 @@ public class SearchEngine {
         int totalValuesCount = getTotalValuesCount();
         System.out.println("Total number of values in the map: " + String.format("%,d", totalValuesCount).replace(',', '_'));
 
-        System.out.println("Enter search terms: ");
-        String searchTerms = "także odpowiem";
+        while (true) {
+            System.out.println("Enter your search terms separated by spaces: ");
+            String searchTerms = scanner.nextLine();
 
-        System.out.println("Enter mode (single, consecutive, anywhere): ");
-        String mode = "consecutive";
+            System.out.println("Enter mode (single, consecutive, anywhere): ");
+            String mode = scanner.nextLine();
 
-        String[] searchWords = searchTerms.split("[^\\p{L}+]");
+            String[] searchWords = searchTerms.split("[^\\p{L}+]");
+            searchWords = Arrays.stream(searchWords)
+                    .filter(s -> !s.isEmpty())
+                    .map(String::toLowerCase)
+                    .toArray(String[]::new);
 
-
-        searchIndex(searchWords, mode);
+            searchIndex(searchWords, mode);
+        }
     }
 
     private static int getTotalValuesCount() {
@@ -119,9 +124,7 @@ public class SearchEngine {
                                 wordIndex.computeIfAbsent(word.toLowerCase(), k -> Collections.synchronizedSet(new HashSet<>())).add(file)
                         );
 
-                if (counter.incrementAndGet() == 5000) {
-                    reinitializeExecutorService();
-                }
+
             } catch (IOException e) {
                 e.printStackTrace();
             }

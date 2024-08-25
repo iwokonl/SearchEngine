@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 public class Main {
 
 
-    private static Map<String, Set<Path>> wordIndex = new ConcurrentHashMap<>(300_000,300_000/0.85f);
+    private static Map<String, Set<Path>> wordIndex = new ConcurrentHashMap<>(800_000,300_000/0.85f);
     private static ExecutorService executorService = Executors.newFixedThreadPool(32, Thread.ofVirtual().factory());
 
     private static ReferenceQueue<Map<String, Set<Path>>> referenceQueue = new ReferenceQueue<>();
@@ -63,7 +63,8 @@ public class Main {
         scheduleGarbageCollection();
         Scanner scanner = new Scanner(System.in);
 
-        String directory = "C:/test";
+        System.out.println("Wskaż katalog: ");
+        String directory =scanner.nextLine();
         measureExecutionTime(() -> {
             try {
                 Path startPath = Paths.get(directory);
@@ -77,7 +78,7 @@ public class Main {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
+            System.out.println("Shutting down executor service...");
             executorService.shutdown();
             try {
                 if (!executorService.awaitTermination(60, TimeUnit.MINUTES)) {
@@ -87,24 +88,28 @@ public class Main {
                 executorService.shutdownNow();
             }
         });
+        System.out.println("Calculing wordIndex.size");
         System.out.println("Size of wordIndex: " + String.format("%,d", wordIndex.size()).replace(',', '_'));
 
+        System.out.println("Calculing getTotalValuesCount.size");
         int totalValuesCount = getTotalValuesCount();
         System.out.println("Total number of values in the map: " + String.format("%,d", totalValuesCount).replace(',', '_'));
 
-        System.out.println("Enter search terms: ");
-        String searchTerms = "także odpowiem";
+        while (true) {
+            System.out.println("Enter your search terms separated by spaces: ");
+            String searchTerms = scanner.nextLine();
 
-        System.out.println("Enter mode (single, consecutive, anywhere): ");
-        String mode = "single";
+            System.out.println("Enter mode (single, consecutive, anywhere): ");
+            String mode = scanner.nextLine();
 
-        String[] searchWords = searchTerms.split("[^\\p{L}+]");
-        searchWords = Arrays.stream(searchWords)
-                .filter(s -> !s.isEmpty())
-                .map(String::toLowerCase)
-                .toArray(String[]::new);
+            String[] searchWords = searchTerms.split("[^\\p{L}+]");
+            searchWords = Arrays.stream(searchWords)
+                    .filter(s -> !s.isEmpty())
+                    .map(String::toLowerCase)
+                    .toArray(String[]::new);
 
-        searchIndex(searchWords,mode);
+            searchIndex(searchWords, mode);
+        }
     }
 
     private static int getTotalValuesCount() {
@@ -132,10 +137,8 @@ public class Main {
                                     wordIndex.computeIfAbsent(stem.toLowerCase(), k -> Collections.synchronizedSet(new HashSet<>())).add(file)
                             );
                         });
-
-                if (counter.incrementAndGet() == 5000) {
-                    reinitializeExecutorService();
-                }
+                System.out.println(counter.incrementAndGet());
+                System.out.println(counter.get());
             } catch (IOException e) {
                 e.printStackTrace();
             }
