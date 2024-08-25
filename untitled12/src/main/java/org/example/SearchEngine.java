@@ -123,7 +123,7 @@ public class SearchEngine {
                         .forEach(word ->
                                 wordIndex.computeIfAbsent(word.toLowerCase(), k -> Collections.synchronizedSet(new HashSet<>())).add(file)
                         );
-
+                System.out.println(counter.incrementAndGet());
 
             } catch (IOException e) {
                 e.printStackTrace();
