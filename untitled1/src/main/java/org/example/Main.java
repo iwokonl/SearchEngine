@@ -5,6 +5,8 @@ import morfologik.stemming.WordData;
 import morfologik.stemming.polish.PolishStemmer;
 
 import java.io.IOException;
+import java.lang.ref.PhantomReference;
+import java.lang.ref.ReferenceQueue;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
@@ -15,8 +17,11 @@ import java.util.stream.Collectors;
 public class Main {
 
 
-    private static Map<String, Set<Path>> wordIndex = new ConcurrentHashMap<>();
-    private static ExecutorService executorService = Executors.newFixedThreadPool(20);
+    private static Map<String, Set<Path>> wordIndex = new ConcurrentHashMap<>(300_000,300_000/0.85f);
+    private static ExecutorService executorService = Executors.newFixedThreadPool(32, Thread.ofVirtual().factory());
+
+    private static ReferenceQueue<Map<String, Set<Path>>> referenceQueue = new ReferenceQueue<>();
+    private static PhantomReference<Map<String, Set<Path>>> phantomReference = new PhantomReference<>(wordIndex, referenceQueue);
     private static ScheduledExecutorService gcScheduler = Executors.newScheduledThreadPool(1);
     private static AtomicInteger counter = new AtomicInteger(0);
 
@@ -44,7 +49,14 @@ public class Main {
         gcScheduler.scheduleAtFixedRate(() -> {
             System.out.println("Triggering garbage collection...");
             System.gc();
-        }, 0, 1, TimeUnit.MINUTES);
+        }, 0, 15, TimeUnit.SECONDS);
+
+        gcScheduler.scheduleAtFixedRate(() -> {
+            if (referenceQueue.poll() != null) {
+                System.out.println("wordIndex is about to be collected!");
+                // Perform cleanup or reinitialize the object
+            }
+        }, 0, 1, TimeUnit.SECONDS);
     }
 
     public static void main(String[] args) {
@@ -81,12 +93,18 @@ public class Main {
         System.out.println("Total number of values in the map: " + String.format("%,d", totalValuesCount).replace(',', '_'));
 
         System.out.println("Enter search terms: ");
-        String searchTerms = "butelki";
+        String searchTerms = "Stanisławie Piotrowiczu: dziewczyna jak malina";
 
         System.out.println("Enter mode (single, consecutive, anywhere): ");
-        String mode = "single";
+        String mode = "consecutive";
 
         String[] searchWords = searchTerms.split("[^\\p{L}+]");
+        searchWords = Arrays.stream(searchWords)
+                .filter(s -> !s.isEmpty())
+                .map(String::toLowerCase)
+                .toArray(String[]::new);
+
+        searchIndex(searchWords,mode);
     }
 
     private static int getTotalValuesCount() {
@@ -101,26 +119,21 @@ public class Main {
         CompletableFuture.runAsync(() -> {
             try {
                 String content = new String(Files.readAllBytes(file));
-                String[] words = content.split("[^\\p{L}+]");
-                List<String> filteredList = Arrays.stream(words)
+                Arrays.stream(content.split("[^\\p{L}+]"))
                         .filter(s -> !s.isEmpty())
-                        .collect(Collectors.toList());
+                        .forEach(word -> {
+                            List<WordData> stems = stemmer.lookup(word.toLowerCase());
+                            List<String> stemStrings = stems.stream()
+                                    .map(stem -> stem.getStem().toString())
+                                    .collect(Collectors.toList());
+                            stemStrings.add(word.toLowerCase());
 
-                for (String word : filteredList) {
-                    List<WordData> stems = stemmer.lookup(word.toLowerCase());
-                    List<String> stemStrings = stems.stream()
-                            .map(stem -> stem.getStem().toString())
-                            .collect(Collectors.toList());
-                    stemStrings.add(word.toLowerCase());
+                            stemStrings.forEach(stem ->
+                                    wordIndex.computeIfAbsent(stem.toLowerCase(), k -> Collections.synchronizedSet(new HashSet<>())).add(file)
+                            );
+                        });
 
-                    for (String stem : stemStrings) {
-                        wordIndex.computeIfAbsent(stem.toLowerCase(), k -> Collections.synchronizedSet(new HashSet<>())).add(file);
-                    }
-                }
-                int currentCount = counter.incrementAndGet();
-                System.out.println(currentCount);
-
-                if (currentCount == 5000) {
+                if (counter.incrementAndGet() == 5000) {
                     reinitializeExecutorService();
                 }
             } catch (IOException e) {
@@ -156,6 +169,10 @@ public class Main {
                 break;
             case "consecutive":
                 Set<Path> paths = ConcurrentHashMap.newKeySet();
+                List<String[]> gen= new ArrayList<>();
+                if((searchWords.length <= 3)) {
+                    gen = generateCombinationsWithStems(searchWords, stemmer);
+                }
                 Arrays.stream(searchWords).parallel().forEach(word -> {
                     Set<Path> files = wordIndex.get(word.toLowerCase());
                     if (files != null) {
@@ -168,13 +185,24 @@ public class Main {
                         paths.clear();
                     }
                 });
-                paths.parallelStream().forEach(file -> {
-                    if (!resultFiles.contains(file)) {
-                        if (containsConsecutiveWords(file, searchWords)) {
+                if (searchWords.length>3){
+                    paths.parallelStream().forEach(file -> {
+                        if (containsConsecutiveWordsHashMap(file, searchWords)) {
                             resultFiles.add(file);
                         }
+                    });
+                }else {
+                    for (String[] combination : gen) {
+                        paths.parallelStream().forEach(file -> {
+                            if (!resultFiles.contains(file)) {
+                                if (containsConsecutiveWords(file, combination)) {
+                                    resultFiles.add(file);
+                                }
+                            }
+                        });
+
                     }
-                });
+                }
                 break;
             case "anywhere":
                 Arrays.stream(searchWords).parallel().forEach(word -> {
@@ -301,8 +329,39 @@ public class Main {
             e.printStackTrace();
         }
     }
-
     private static boolean containsConsecutiveWords(Path file, String[] searchWords) {
+        long startTime = System.currentTimeMillis();
+        try {
+            String content = new String(Files.readAllBytes(file)).toLowerCase();
+            String[] words = content.split("[^\\p{L}+]");
+            String[] filteredArray = Arrays.stream(words)
+                    .filter(s -> !s.isEmpty())
+                    .toList()
+                    .toArray(new String[0]);
+
+            int searchLength = searchWords.length;
+            for (int i = 0; i <= words.length - searchLength; i++) {
+                boolean consecutive = true;
+                for (int j = 0; j < searchLength; j++) {
+                    if (!words[i + j].equals(filteredArray[j].toLowerCase())) {
+                        consecutive = false;
+                        break;
+                    }
+                }
+                if (consecutive) {
+                    long endTime = System.currentTimeMillis();
+                    System.out.println("Time taken to search file " + file + ": " + (endTime - startTime) + " milliseconds");
+                    return true;
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        long endTime = System.currentTimeMillis();
+        System.out.println("Time taken to search file asd" + file + ": " + (endTime - startTime) + " milliseconds");
+        return false;
+    }
+    private static boolean containsConsecutiveWordsHashMap(Path file, String[] searchWords) {
         long startTime = System.currentTimeMillis();
         try {
             String content = new String(Files.readAllBytes(file)).toLowerCase();
@@ -322,13 +381,14 @@ public class Main {
                 boolean consecutive = true;
                 for (int j = 0; j < searchLength; j++) {
                     if (!getBaseWord(filteredArray[j + i], multiKeyMap).contains(searchWords[j])) {
+
                         consecutive = false;
                         break;
                     }
                 }
                 if (consecutive) {
                     long endTime = System.currentTimeMillis();
-                    System.out.println("Time taken to search file " + file + ": " + (endTime - startTime) + " milliseconds");
+                    System.out.println("Time taken to search file ads" + file + ": " + (endTime - startTime) + " milliseconds");
                     return true;
                 }
             }
